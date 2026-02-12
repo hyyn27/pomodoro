@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>PLAVE Pomo-Music</title>
+    <style>
+        :root { --main-blue: #4a6fff; --soft-blue: #eef2ff; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f0f4ff; margin: 0; }
+        .container { background: white; padding: 2.5rem; border-radius: 30px; box-shadow: 0 20px 50px rgba(74, 111, 255, 0.15); text-align: center; width: 400px; border: 1px solid rgba(74, 111, 255, 0.2); }
+        #timer { font-size: 5rem; font-weight: 800; margin: 10px 0; color: var(--main-blue); font-variant-numeric: tabular-nums; }
+        #status { font-size: 1.4rem; font-weight: 600; color: #6e8eff; min-height: 1.6em; }
+        .controls button { padding: 14px 28px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 15px; transition: 0.2s; font-weight: bold; margin: 5px; }
+        .start { background-color: var(--main-blue); color: white; }
+        .stop { background-color: #ff6b6b; color: white; }
+        .input-group { margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; }
+        input { padding: 12px; width: 200px; border: 2px solid var(--soft-blue); border-radius: 10px; outline: none; }
+        input:focus { border-color: var(--main-blue); }
+        #player-wrapper { margin-top: 20px; border-radius: 15px; overflow: hidden; height: 150px; border: 3px solid var(--soft-blue); }
+        #pomo-count { margin-top: 15px; font-size: 0.9rem; color: #777; background: var(--soft-blue); padding: 6px 18px; border-radius: 20px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="status">기다리고 있을게! 💙</div>
+    <div id="timer">25:00</div>
+    
+    <div class="controls">
+        <button class="start" onclick="startTimer()">집중 시작</button>
+        <button class="stop" onclick="pauseTimer()">정지</button>
+    </div>
+
+    <div id="pomo-count">오늘: 0 포모도로</div>
+
+    <div class="input-group">
+        <input type="text" id="keyword" placeholder="플레이브 노래 검색">
+        <button onclick="searchMusic()" style="background: var(--main-blue); color: white; padding: 10px 15px; border-radius: 10px;">검색</button>
+    </div>
+
+    <div id="player-wrapper">
+        <div id="player"></div>
+    </div>
+</div>
+
+<script>
+    let timer;
+    let timeLeft = 25 * 60;
+    let isRunning = false;
+    let sessionCount = 0;
+    let currentMode = 'focus';
+    const beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+
+    let player;
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            height: '150', width: '100%',
+            playerVars: { 'autoplay': 0, 'controls': 1, 'enablejsapi': 1 },
+            events: { 'onReady': () => console.log("Ready") }
+        });
+    }
+
+    function searchMusic() {
+        const query = document.getElementById('keyword').value || '플레이브 노래';
+        // 'search' 타입을 사용하여 재생목록 형태로 불러오기
+        player.loadPlaylist({
+            list: query,
+            listType: 'search',
+            index: 0,
+            suggestedQuality: 'medium'
+        });
+        alert(`'${query}' 검색 결과를 재생합니다.`);
+    }
+
+    function startTimer() {
+        if (isRunning) return;
+        isRunning = true;
+        if (currentMode === 'focus') player.playVideo();
+        
+        timer = setInterval(() => {
+            timeLeft--;
+            updateDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                isRunning = false;
+                handleSessionComplete();
+            }
+        }, 1000);
+    }
+
+    function pauseTimer() {
+        clearInterval(timer);
+        isRunning = false;
+        player.pauseVideo();
+    }
+
+    function updateDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function handleSessionComplete() {
+        beep.play();
+        player.pauseVideo();
+
+        if (currentMode === 'focus') {
+            sessionCount++;
+            document.getElementById('pomo-count').innerText = `오늘: ${sessionCount} 포모도로`;
+            if (sessionCount % 4 === 0) {
+                currentMode = 'longBreak'; timeLeft = 30 * 60;
+                document.getElementById('status').innerText = "🥤 긴 휴식 (30분)";
+            } else {
+                currentMode = 'shortBreak'; timeLeft = 5 * 60;
+                document.getElementById('status').innerText = "☕ 짧은 휴식 (5분)";
+            }
+        } else {
+            currentMode = 'focus'; timeLeft = 25 * 60;
+            document.getElementById('status').innerText = "다시 집중해볼까요? 💙";
+            setTimeout(() => { player.playVideo(); startTimer(); }, 1000);
+            return;
+        }
+        updateDisplay();
+    }
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
