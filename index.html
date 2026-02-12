@@ -1,126 +1,140 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>PLAVE Pomo-Music</title>
-    <style>
-        :root { --main-blue: #4a6fff; --soft-blue: #eef2ff; }
-        body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f0f4ff; margin: 0; }
-        .container { background: white; padding: 2.5rem; border-radius: 30px; box-shadow: 0 20px 50px rgba(74, 111, 255, 0.15); text-align: center; width: 400px; border: 1px solid rgba(74, 111, 255, 0.2); }
-        #timer { font-size: 5rem; font-weight: 800; margin: 10px 0; color: var(--main-blue); font-variant-numeric: tabular-nums; }
-        #status { font-size: 1.4rem; font-weight: 600; color: #6e8eff; min-height: 1.6em; }
-        .controls button { padding: 14px 28px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 15px; transition: 0.2s; font-weight: bold; margin: 5px; }
-        .start { background-color: var(--main-blue); color: white; }
-        .stop { background-color: #ff6b6b; color: white; }
-        .input-group { margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; }
-        input { padding: 12px; width: 200px; border: 2px solid var(--soft-blue); border-radius: 10px; outline: none; }
-        input:focus { border-color: var(--main-blue); }
-        #player-wrapper { margin-top: 20px; border-radius: 15px; overflow: hidden; height: 150px; border: 3px solid var(--soft-blue); }
-        #pomo-count { margin-top: 15px; font-size: 0.9rem; color: #777; background: var(--soft-blue); padding: 6px 18px; border-radius: 20px; display: inline-block; }
-    </style>
+<meta charset="UTF-8">
+<title>나만의 포모도로 타이머</title>
+<style>
+body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f02f5; margin: 0; }
+.container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+#timer { font-size: 4rem; font-weight: bold; margin: 20px 0; color: #ff5252; }
+#status { font-size: 1.2rem; margin-bottom: 10px; color: #555; }
+#pomo-count { margin-top: 15px; font-weight: bold; }
+button { padding: 10px 20px; font-size: 1rem; cursor: pointer; border: none; border-radius: 8px; transition: 0.3s; margin: 5px; }
+.start { background-color: #4caf50; color: white; }
+.stop { background-color: #f44336; color: white; }
+.input-group { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+input { padding: 8px; width: 150px; border: 1px solid #ddd; border-radius: 4px; }
+
+/* 수정된 부분: 영상 프리뷰를 보이게 설정 */
+#player { 
+    display: block; 
+    margin-top: 20px; 
+    border-radius: 10px; 
+    overflow: hidden; 
+} 
+</style>
 </head>
 <body>
-
 <div class="container">
-    <div id="status">기다리고 있을게! 💙</div>
-    <div id="timer">25:00</div>
-    
-    <div class="controls">
-        <button class="start" onclick="startTimer()">집중 시작</button>
-        <button class="stop" onclick="pauseTimer()">정지</button>
-    </div>
-
-    <div id="pomo-count">오늘: 0 포모도로</div>
-
-    <div class="input-group">
-        <input type="text" id="keyword" placeholder="플레이브 노래 검색">
-        <button onclick="searchMusic()" style="background: var(--main-blue); color: white; padding: 10px 15px; border-radius: 10px;">검색</button>
-    </div>
-
-    <div id="player-wrapper">
-        <div id="player"></div>
-    </div>
+<div id="status">준비 완료</div>
+<div id="timer">25:00</div>
+<button class="start" onclick="startTimer()">시작</button>
+<button class="stop" onclick="pauseTimer()">일시정지</button>
+<button onclick="resetTimer()">초기화</button>
+<div id="pomo-count">오늘의 포모도로: 0</div>
+<div class="input-group">
+<input type="text" id="keyword" placeholder="음악 키워드 (예: Lo-fi)">
+<button onclick="updateMusic()">음악 변경</button>
+<p style="font-size: 0.8rem; color: #888;">※ 유튜브 정책상 첫 재생은 직접 클릭이 필요할 수 있습니다.</p>
+</div>
+<div id="player"></div>
 </div>
 
 <script>
-    let timer;
-    let timeLeft = 25 * 60;
-    let isRunning = false;
-    let sessionCount = 0;
-    let currentMode = 'focus';
-    const beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+let timer;
+let timeLeft = 25 * 60;
+let isRunning = false;
+let sessionCount = 0; 
+let currentMode = 'focus'; 
 
-    let player;
-    function onYouTubeIframeAPIReady() {
-        player = new YT.Player('player', {
-            height: '150', width: '100%',
-            playerVars: { 'autoplay': 0, 'controls': 1, 'enablejsapi': 1 },
-            events: { 'onReady': () => console.log("Ready") }
-        });
-    }
+const timerDisplay = document.getElementById('timer');
+const statusDisplay = document.getElementById('status');
+const pomoDisplay = document.getElementById('pomo-count');
+const keywordInput = document.getElementById('keyword');
 
-    function searchMusic() {
-        const query = document.getElementById('keyword').value || '플레이브 노래';
-        // 'search' 타입을 사용하여 재생목록 형태로 불러오기
-        player.loadPlaylist({
-            list: query,
-            listType: 'search',
-            index: 0,
-            suggestedQuality: 'medium'
-        });
-        alert(`'${query}' 검색 결과를 재생합니다.`);
-    }
+const beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
 
-    function startTimer() {
-        if (isRunning) return;
-        isRunning = true;
-        if (currentMode === 'focus') player.playVideo();
-        
-        timer = setInterval(() => {
-            timeLeft--;
-            updateDisplay();
-            if (timeLeft <= 0) {
-                clearInterval(timer);
-                isRunning = false;
-                handleSessionComplete();
-            }
-        }, 1000);
-    }
+let player;
+function onYouTubeIframeAPIReady() {
+player = new YT.Player('player', {
+/* 수정된 부분: 프리뷰 크기 지정 */
+height: '180', width: '300',
+playerVars: { 'listType': 'search', 'list': 'lofi hip hop' },
+events: { 'onReady': onPlayerReady }
+});
+}
 
-    function pauseTimer() {
-        clearInterval(timer);
-        isRunning = false;
-        player.pauseVideo();
-    }
+function onPlayerReady(event) {
+console.log("Player Ready");
+}
 
-    function updateDisplay() {
-        const mins = Math.floor(timeLeft / 60);
-        const secs = timeLeft % 60;
-        document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
+function updateMusic() {
+const query = keywordInput.value || 'lofi';
+player.cueVideoByUrl(`https://www.youtube.com/embed?listType=search&list=${query}`);
+alert(`키워드 '${query}'(으)로 음악을 설정했습니다.`);
+}
 
-    function handleSessionComplete() {
-        beep.play();
-        player.pauseVideo();
+function startTimer() {
+if (isRunning) return;
+isRunning = true;
+if (currentMode === 'focus') player.playVideo();
+timer = setInterval(() => {
+timeLeft--;
+updateDisplay();
+if (timeLeft <= 0) {
+clearInterval(timer);
+isRunning = false;
+handleSessionComplete();
+}
+}, 1000);
+}
 
-        if (currentMode === 'focus') {
-            sessionCount++;
-            document.getElementById('pomo-count').innerText = `오늘: ${sessionCount} 포모도로`;
-            if (sessionCount % 4 === 0) {
-                currentMode = 'longBreak'; timeLeft = 30 * 60;
-                document.getElementById('status').innerText = "🥤 긴 휴식 (30분)";
-            } else {
-                currentMode = 'shortBreak'; timeLeft = 5 * 60;
-                document.getElementById('status').innerText = "☕ 짧은 휴식 (5분)";
-            }
-        } else {
-            currentMode = 'focus'; timeLeft = 25 * 60;
-            document.getElementById('status').innerText = "다시 집중해볼까요? 💙";
-            setTimeout(() => { player.playVideo(); startTimer(); }, 1000);
-            return;
-        }
-        updateDisplay();
-    }
+function pauseTimer() {
+clearInterval(timer);
+isRunning = false;
+player.pauseVideo();
+}
+
+function resetTimer() {
+pauseTimer();
+timeLeft = 25 * 60;
+currentMode = 'focus';
+updateDisplay();
+}
+
+function updateDisplay() {
+const mins = Math.floor(timeLeft / 60);
+const secs = timeLeft % 60;
+timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function handleSessionComplete() {
+beep.play();
+player.pauseVideo();
+if (currentMode === 'focus') {
+sessionCount++;
+pomoDisplay.innerText = `오늘의 포모도로: ${sessionCount}`;
+if (sessionCount % 4 === 0) {
+currentMode = 'longBreak';
+timeLeft = 30 * 60;
+statusDisplay.innerText = "🥤 긴 휴식 (30분)";
+} else {
+currentMode = 'shortBreak';
+timeLeft = 5 * 60;
+statusDisplay.innerText = "☕ 짧은 휴식 (5분)";
+}
+} else {
+currentMode = 'focus';
+timeLeft = 25 * 60;
+statusDisplay.innerText = "✍️ 집중 세션";
+beep.play();
+player.playVideo();
+startTimer(); 
+return;
+}
+updateDisplay();
+alert(statusDisplay.innerText + " 시작!");
+}
 </script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
