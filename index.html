@@ -12,8 +12,8 @@ body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direc
 button { padding: 10px 20px; font-size: 1.2rem; cursor: pointer; border: none; border-radius: 8px; transition: 0.3s; margin: 5px; vertical-align: middle; }
 
 /* 버튼 스타일 수정 */
-.toggle-btn { background-color: #4caf50; color: white; min-width: 60px; }
-.reset-btn { background-color: #ddd; color: #333; min-width: 60px; }
+.toggle-btn { font-size: 1.5rem; background-color: #4caf50; color: white; min-width: 60px; }
+.reset-btn { font-size: 1.5rem; background-color: #ddd; color: #333; min-width: 60px; }
 .reset-btn:hover { background-color: #ccc; }
 
 .input-group { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
@@ -28,13 +28,14 @@ overflow: hidden;
 }
   </style>
 </head>
+  
 <body>
   <div class="container">
     <div id="status">준비 완료</div>
     <div id="timer">25:00</div>
   
     <button class="toggle-btn" id="toggleBtn" onclick="toggleTimer()">⏯</button>
-    <button class="reset-btn" onclick="resetTimer()">⟲</button>
+    <button class="reset-btn" onclick="resetTimer()">↺</button>
   
     <div id="pomo-count">오늘의 포모도로: 0</div>
     <div class="input-group">
