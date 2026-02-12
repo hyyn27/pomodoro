@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>나만의 포모도로 타이머</title>
 <style>
-body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f02f5; margin: 0; }
+body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
 .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 350px; }
 #timer { font-size: 4rem; font-weight: bold; margin: 20px 0; color: #ff5252; }
 #status { font-size: 1.2rem; margin-bottom: 10px; color: #555; }
@@ -13,15 +13,14 @@ button { padding: 10px 20px; font-size: 1rem; cursor: pointer; border: none; bor
 .start { background-color: #4caf50; color: white; }
 .stop { background-color: #f44336; color: white; }
 .input-group { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
-input { padding: 8px; width: 150px; border: 1px solid #ddd; border-radius: 4px; }
+input { padding: 8px; width: 220px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
 
-/* 수정된 부분: 영상 프리뷰를 보이게 설정 */
-#player { 
-    display: block; 
-    margin-top: 20px; 
-    border-radius: 10px; 
-    overflow: hidden; 
-} 
+#player {
+display: block;
+margin-top: 20px;
+border-radius: 10px;
+overflow: hidden;
+}
 </style>
 </head>
 <body>
@@ -33,9 +32,9 @@ input { padding: 8px; width: 150px; border: 1px solid #ddd; border-radius: 4px; 
 <button onclick="resetTimer()">초기화</button>
 <div id="pomo-count">오늘의 포모도로: 0</div>
 <div class="input-group">
-<input type="text" id="keyword" placeholder="음악 키워드 (예: Lo-fi)">
+<input type="text" id="playlistLink" placeholder="유튜브 재생목록 링크 주소 붙여넣기">
 <button onclick="updateMusic()">음악 변경</button>
-<p style="font-size: 0.8rem; color: #888;">※ 유튜브 정책상 첫 재생은 직접 클릭이 필요할 수 있습니다.</p>
+<p style="font-size: 0.8rem; color: #888;">※ 재생목록 링크(URL) 전체를 입력해 주세요.</p>
 </div>
 <div id="player"></div>
 </div>
@@ -44,22 +43,22 @@ input { padding: 8px; width: 150px; border: 1px solid #ddd; border-radius: 4px; 
 let timer;
 let timeLeft = 25 * 60;
 let isRunning = false;
-let sessionCount = 0; 
-let currentMode = 'focus'; 
+let sessionCount = 0;
+let currentMode = 'focus';
 
 const timerDisplay = document.getElementById('timer');
 const statusDisplay = document.getElementById('status');
 const pomoDisplay = document.getElementById('pomo-count');
-const keywordInput = document.getElementById('keyword');
+const playlistInput = document.getElementById('playlistLink'); // 변수명 변경
 
 const beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
 
 let player;
 function onYouTubeIframeAPIReady() {
 player = new YT.Player('player', {
-/* 수정된 부분: 프리뷰 크기 지정 */
 height: '180', width: '300',
-playerVars: { 'listType': 'search', 'list': 'lofi hip hop' },
+// 초기값은 검색 타입 대신 빈 상태 또는 기본 ID로 설정 가능
+playerVars: { 'autoplay': 0, 'controls': 1 },
 events: { 'onReady': onPlayerReady }
 });
 }
@@ -68,10 +67,23 @@ function onPlayerReady(event) {
 console.log("Player Ready");
 }
 
+// 링크에서 재생목록 ID(list=...)를 추출하여 재생하는 기능 추가
 function updateMusic() {
-const query = keywordInput.value || 'lofi';
-player.cueVideoByUrl(`https://www.youtube.com/embed?listType=search&list=${query}`);
-alert(`키워드 '${query}'(으)로 음악을 설정했습니다.`);
+const link = playlistInput.value;
+const urlParams = new URLSearchParams(new URL(link).search);
+const playlistId = urlParams.get('list');
+
+if (playlistId) {
+player.loadPlaylist({
+list: playlistId,
+listType: 'playlist',
+index: 0,
+suggestedQuality: 'small'
+});
+alert("재생목록이 설정되었습니다.");
+} else {
+alert("올바른 재생목록 링크가 아닙니다. 'list=' 파라미터가 포함되어 있는지 확인해 주세요.");
+}
 }
 
 function startTimer() {
@@ -129,7 +141,7 @@ timeLeft = 25 * 60;
 statusDisplay.innerText = "✍️ 집중 세션";
 beep.play();
 player.playVideo();
-startTimer(); 
+startTimer();
 return;
 }
 updateDisplay();
