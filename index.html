@@ -1,42 +1,48 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>나만의 포모도로 타이머</title>
-<style>
+  <meta charset="UTF-8">
+  <title>Pomodoro with YT</title>
+  <style>
 body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
 .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 350px; }
 #timer { font-size: 4rem; font-weight: bold; margin: 20px 0; color: #ff5252; }
 #status { font-size: 1.2rem; margin-bottom: 10px; color: #555; }
 #pomo-count { margin-top: 15px; font-weight: bold; }
-button { padding: 10px 20px; font-size: 1rem; cursor: pointer; border: none; border-radius: 8px; transition: 0.3s; margin: 5px; }
-.start { background-color: #4caf50; color: white; }
-.stop { background-color: #f44336; color: white; }
+button { padding: 10px 20px; font-size: 1.2rem; cursor: pointer; border: none; border-radius: 8px; transition: 0.3s; margin: 5px; vertical-align: middle; }
+
+/* 버튼 스타일 수정 */
+.toggle-btn { background-color: #4caf50; color: white; min-width: 60px; }
+.reset-btn { background-color: #ddd; color: #333; min-width: 60px; }
+.reset-btn:hover { background-color: #ccc; }
+
 .input-group { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
 input { padding: 8px; width: 220px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
 
+/* 수정된 부분: 중앙 정렬 강화 */
 #player {
 display: block;
-margin-top: 20px;
+margin: 20px auto 0; /* 중앙 정렬 */
 border-radius: 10px;
 overflow: hidden;
 }
-</style>
+  </style>
 </head>
 <body>
-<div class="container">
-<div id="status">준비 완료</div>
-<div id="timer">25:00</div>
-<button class="start" onclick="startTimer()">시작</button>
-<button class="stop" onclick="pauseTimer()">일시정지</button>
-<button onclick="resetTimer()">초기화</button>
-<div id="pomo-count">오늘의 포모도로: 0</div>
-<div class="input-group">
-<input type="text" id="playlistLink" placeholder="유튜브 재생목록 링크 주소 붙여넣기">
-<button onclick="updateMusic()">음악 변경</button>
-<p style="font-size: 0.8rem; color: #888;">※ 재생목록 링크(URL) 전체를 입력해 주세요.</p>
-</div>
-<div id="player"></div>
+  <div class="container">
+    <div id="status">준비 완료</div>
+    <div id="timer">25:00</div>
+  
+    <button class="toggle-btn" id="toggleBtn" onclick="toggleTimer()">⏯</button>
+    <button class="reset-btn" onclick="resetTimer()">⟲</button>
+  
+    <div id="pomo-count">오늘의 포모도로: 0</div>
+    <div class="input-group">
+      <input type="text" id="playlistLink" placeholder="유튜브 재생목록 링크 주소 붙여넣기">
+      <button onclick="updateMusic()">음악 변경</button>
+      <p style="font-size: 0.8rem; color: #888;">※ 재생목록 링크(URL) 전체를 입력해 주세요.</p>
+  </div>
+  <div id="player"></div>
 </div>
 
 <script>
@@ -49,7 +55,8 @@ let currentMode = 'focus';
 const timerDisplay = document.getElementById('timer');
 const statusDisplay = document.getElementById('status');
 const pomoDisplay = document.getElementById('pomo-count');
-const playlistInput = document.getElementById('playlistLink'); // 변수명 변경
+const playlistInput = document.getElementById('playlistLink');
+const toggleBtn = document.getElementById('toggleBtn');
 
 const beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
 
@@ -57,7 +64,6 @@ let player;
 function onYouTubeIframeAPIReady() {
 player = new YT.Player('player', {
 height: '180', width: '300',
-// 초기값은 검색 타입 대신 빈 상태 또는 기본 ID로 설정 가능
 playerVars: { 'autoplay': 0, 'controls': 1 },
 events: { 'onReady': onPlayerReady }
 });
@@ -67,11 +73,11 @@ function onPlayerReady(event) {
 console.log("Player Ready");
 }
 
-// 링크에서 재생목록 ID(list=...)를 추출하여 재생하는 기능 추가
 function updateMusic() {
+try {
 const link = playlistInput.value;
-const urlParams = new URLSearchParams(new URL(link).search);
-const playlistId = urlParams.get('list');
+const url = new URL(link);
+const playlistId = url.searchParams.get('list');
 
 if (playlistId) {
 player.loadPlaylist({
@@ -82,13 +88,25 @@ suggestedQuality: 'small'
 });
 alert("재생목록이 설정되었습니다.");
 } else {
-alert("올바른 재생목록 링크가 아닙니다. 'list=' 파라미터가 포함되어 있는지 확인해 주세요.");
+alert("올바른 재생목록 링크가 아닙니다.");
+}
+} catch (e) {
+alert("유효한 URL을 입력해 주세요.");
+}
+}
+
+// 시작/일시정지 통합 함수
+function toggleTimer() {
+if (isRunning) {
+pauseTimer();
+} else {
+startTimer();
 }
 }
 
 function startTimer() {
-if (isRunning) return;
 isRunning = true;
+toggleBtn.style.backgroundColor = "#f44336"; // 정지 시 빨간색 계열로 변경 제안 (선택사항)
 if (currentMode === 'focus') player.playVideo();
 timer = setInterval(() => {
 timeLeft--;
@@ -104,6 +122,7 @@ handleSessionComplete();
 function pauseTimer() {
 clearInterval(timer);
 isRunning = false;
+toggleBtn.style.backgroundColor = "#4caf50"; // 다시 시작 가능하게 녹색으로
 player.pauseVideo();
 }
 
